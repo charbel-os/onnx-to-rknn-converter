@@ -1,0 +1,41 @@
+name: Convert ONNX to RKNN
+
+on:
+  workflow_dispatch:
+    inputs:
+      onnx_path:
+        description: 'Path to ONNX model file in the repository'
+        required: true
+        default: 'model.onnx'
+      target_platform:
+        description: 'Target Rockchip platform (e.g., rk3588, rk3566)'
+        required: true
+        default: 'rk3588'
+
+jobs:
+  convert:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy
+          pip install rknn-toolkit2
+
+      - name: Run conversion script
+        run: |
+          python convert.py "${{ github.event.inputs.onnx_path }}" output.rknn "${{ github.event.inputs.target_platform }}"
+
+      - name: Upload RKNN artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: converted-rknn-model
+          path: output.rknn
