@@ -1,4 +1,4 @@
-name: Build RKNN Model
+name: Convert YOLOv8s ONNX to RKNN (FP16)
 
 on:
   push:
@@ -6,35 +6,31 @@ on:
   workflow_dispatch:
 
 jobs:
-<Steps>
-  <Step title="Build and Export Model" subtitle="Ubuntu Runner">
-    ```yaml
-    runs-on: ubuntu-22.04
+  convert:
+    runs-on: ubuntu-latest # Note: rknn-toolkit2 dependencies usually run best in specific environments, or you can use a pre-built docker container. 
+    
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.8' # RKNN-Toolkit2 typically requires Python 3.8 or 3.9 depending on version
 
-      - name: Install RKNN Toolkit2
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy
+          pip install numpy opencv-python onnx
+          # Install rknn-toolkit2 matching your target version (e.g., from Rockchip's official wheel or index)
           pip install rknn-toolkit2
 
-      - name: Run Conversion Script
+      - name: Run FP16 Model Conversion
         run: |
-          # Replace 'model.onnx' with your actual ONNX model filename
-          python convert.py yolov8n.onnx output.rknn
+          python3 convert.py yolov8s.onnx output.rknn rk3588
 
-      - name: Upload RKNN Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Generated RKNN Model Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: compiled-rknn-model
+          name: yolov8s-rknn-model
           path: output.rknn
-    ```
-  </Step>
-</Steps>
