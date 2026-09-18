@@ -28,7 +28,7 @@ jobs:
       - name: Run Conversion Script
         run: |
           # Replace 'model.onnx' with your actual ONNX model filename
-          python convert.py model.onnx output.rknn
+          python convert.py yolov8n.onnx output.rknn
 
       - name: Upload RKNN Artifact
         uses: actions/upload-artifact@v3
