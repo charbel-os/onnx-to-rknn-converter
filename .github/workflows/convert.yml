@@ -33,4 +33,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: yolov8s-rknn-model
-          path: output.rknn
+          path: output2.rknn
