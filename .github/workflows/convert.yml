@@ -23,28 +23,24 @@ jobs:
           pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Download YOLOv5s Weights from GitHub & Export to ONNX
+      - name: Prepare Calibration Dataset & Export YOLOv5su ONNX
         run: |
-          # Download official v7.0 yolov5s.pt directly from GitHub releases
-          curl -L -O https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt
-
-          # Export YOLOv5s to ONNX with static shape
+          # Export YOLOv5 (auto-mapped to yolov5su) to ONNX with static shape
           python3 -c "
           from ultralytics import YOLO
           model = YOLO('yolov5s.pt')
           model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)
           "
           
-          # Verify the onnx file exists and is in the root directory
-          if [ -f "yolov5s.onnx" ]; then
-            echo "SUCCESS: yolov5s.onnx found."
+          # Verify the correct filename (yolov5su.onnx) exists in the root directory
+          if [ -f "yolov5su.onnx" ]; then
+            echo "SUCCESS: yolov5su.onnx found."
           else
-            echo "ERROR: yolov5s.onnx not found after export!"
+            echo "ERROR: yolov5su.onnx not found after export!"
             exit 1
           fi
 
-      - name: Download Calibration Dataset from GitHub Source
-        run: |
+          # Automatically download and extract 320+ calibration frames from GitHub source video
           python3 -c "
           import cv2, os
           os.makedirs('calib_images', exist_ok=True)
@@ -65,7 +61,7 @@ jobs:
 
       - name: Run Pure INT8 Model Conversion
         run: |
-          python3 convert.py yolov5s.onnx output.rknn rk3588
+          python3 convert.py yolov5su.onnx output.rknn rk3588
 
       - name: Upload Generated RKNN Model Artifact
         uses: actions/upload-artifact@v4
