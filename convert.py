@@ -31,14 +31,15 @@ def main():
         print("Build failed.")
         exit(1)
 
-    # Generate hybrid quantization config to analyze node sensitivities
+    # Correctly pass the configuration path to step 1
     cfg_path = rknn_path + ".quantization.cfg"
+    print(f"--> Generating hybrid quantization config at: {cfg_path}")
     ret = rknn.hybrid_quantization_step1(cfg_path)
     if ret != 0:
         print("Hybrid quantization step 1 failed.")
         exit(1)
 
-    print(f"Success! Hybrid config generated at: {cfg_path}")
+    print("Success! Hybrid configuration generated.")
 
 if __name__ == '__main__':
     main()
