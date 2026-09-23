@@ -20,26 +20,21 @@ def main():
     )
 
     print(f"--> Loading ONNX model: {onnx_path}")
-    ret = rknn.load_onnx(model=onnx_path)
-    if ret != 0:
+    if rknn.load_onnx(model=onnx_path) != 0:
         print("Failed to load ONNX model.")
-        exit(1)
+        sys.exit(1)
 
-    print("--> Building base graph for hybrid calibration...")
-    ret = rknn.build(do_quantization=True, dataset='dataset.txt')
-    if ret != 0:
+    print("--> Building model with pure INT8 quantization...")
+    if rknn.build(do_quantization=True, dataset='dataset.txt') != 0:
         print("Build failed.")
-        exit(1)
+        sys.exit(1)
 
-    # Correctly pass the configuration path to step 1
-    cfg_path = rknn_path + ".quantization.cfg"
-    print(f"--> Generating hybrid quantization config at: {cfg_path}")
-    ret = rknn.hybrid_quantization_step1(cfg_path)
-    if ret != 0:
-        print("Hybrid quantization step 1 failed.")
-        exit(1)
+    print(f"--> Exporting RKNN model to: {rknn_path}")
+    if rknn.export_rknn(rknn_path) != 0:
+        print("Export failed.")
+        sys.exit(1)
 
-    print("Success! Hybrid configuration generated.")
+    print("Success! YOLOv5 INT8 model created.")
 
 if __name__ == '__main__':
     main()
