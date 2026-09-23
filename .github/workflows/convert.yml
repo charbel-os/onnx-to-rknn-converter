@@ -24,23 +24,43 @@ jobs:
           pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Download YOLOv8s ONNX Model & Prepare Calibration Data
+      - name: Download YOLOv8s ONNX Model & Prepare Calibration Dataset (300+ Images)
         run: |
-          # Download official YOLOv8s model and export to onnx if not present in repo
-          python3 -c "from ultralytics import YOLO; model = YOLO('yolov8s.pt'); model.export(format='onnx', imgsz=640, simplify=True)"
+          # Export YOLOv8s to ONNX with static shape (dynamic=False is critical for RKNN INT8)
+          python3 -c "from ultralytics import YOLO; model = YOLO('yolov8s.pt'); model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)"
           
-          # Rename exported file to match expected default if necessary
           if [ -f "yolov8s.onnx" ]; then
-            echo "YOLOv8s ONNX ready."
+            echo "YOLOv8s ONNX successfully exported."
           fi
 
-          # Create a dummy calibration image (640x640) required for INT8 quantization
+          # Automatically download and extract 300+ real-world calibration frames from a public video stream
           python3 -c "
-          import cv2, numpy as np
-          img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
-          cv2.imwrite('calib_img.jpg', img)
+          import cv2, os
+
+          os.makedirs('calib_images', exist_ok=True)
+          video_url = 'https://github.com/intel-iot-devkit/sample-videos/raw/master/car-detection.mp4'
+          
+          print(f'Downloading and extracting frames from: {video_url}')
+          cap = cv2.VideoCapture(video_url)
+          
+          count = 0
+          while cap.isOpened() and count < 320:
+              ret, frame = cap.read()
+              if not ret:
+                  break
+              # Resize to model input specification (640x640)
+              frame_resized = cv2.resize(frame, (640, 640))
+              cv2.imwrite(f'calib_images/img_{count:03d}.jpg', frame_resized)
+              count += 1
+          
+          cap.release()
+          print(f'Successfully extracted {count} calibration images.')
+
+          # Write dataset.txt with absolute paths for the RKNN toolkit
           with open('dataset.txt', 'w') as f:
-              f.write('calib_img.jpg\n')
+              for i in range(count):
+                  abs_path = os.path.abspath(f'calib_images/img_{i:03d}.jpg')
+                  f.write(f'{abs_path}\n')
           "
 
       - name: Run INT8 Model Conversion
