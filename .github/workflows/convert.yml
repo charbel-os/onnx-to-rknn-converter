@@ -1,58 +1,33 @@
-name: Convert YOLOv5 INT8 RKNN Model
+name: Build FP16 RKNN Model
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
-  convert:
+  build-rknn:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          # Ensures large files like weights or videos are fully checked out if using LFS
-          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.10'
+          cache: 'pip'
 
-      - name: Install Dependencies
+      - name: Install RKNN Toolkit
         run: |
           python -m pip install --upgrade pip
-          pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Export Custom YOLOv5 to ONNX
-        run: |
-          # This automatically uses the yolov5s.pt file checked out from your repo
-          python3 -c "
-          from ultralytics import YOLO
-          model = YOLO('yolov5s.pt')
-          model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)
-          "
-          if [ -f "yolov5su.onnx" ]; then
-            echo "SUCCESS: yolov5su.onnx found."
-          else
-            echo "ERROR: yolov5su.onnx not found after export!"
-            exit 1
-          fi
+      - name: Run Conversion Script
+        run: python convert.py
 
-      - name: Generate Calibration Dataset from Video
-        run: |
-          # This runs your script, reading the video checked out from your repo
-          python3 makingCal.py
-
-      - name: Run INT8 Model Conversion
-        run: |
-          # Converts the model using dataset.txt created by makingCal.py
-          python3 convert.py yolov5su.onnx output.rknn rk3588
-
-      - name: Upload Generated RKNN Model Artifact
+      - name: Upload RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov5s-int8-rknn-model
-          path: output.rknn
+          name: ssd-mobilenet-v2-fp16
+          path: ssd_mobilenet_v2_fp16.rknn
