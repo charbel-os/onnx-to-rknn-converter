@@ -1,4 +1,4 @@
-name: Convert YOLOv5s ONNX to RKNN (FP16)
+name: Convert YOLOv5 INT8 RKNN Model
 
 on:
   push:
@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          # Ensures large files like weights or videos are fully checked out if using LFS
+          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,16 +26,14 @@ jobs:
           pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Export YOLOv5su ONNX
+      - name: Export Custom YOLOv5 to ONNX
         run: |
-          # Export YOLOv5 (auto-mapped to yolov5su) to ONNX with static shape
+          # This automatically uses the yolov5s.pt file checked out from your repo
           python3 -c "
           from ultralytics import YOLO
           model = YOLO('yolov5s.pt')
           model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)
           "
-          
-          # Verify the correct filename (yolov5su.onnx) exists in the root directory
           if [ -f "yolov5su.onnx" ]; then
             echo "SUCCESS: yolov5su.onnx found."
           else
@@ -40,13 +41,18 @@ jobs:
             exit 1
           fi
 
-      - name: Run FP16 Model Conversion
+      - name: Generate Calibration Dataset from Video
         run: |
-          # If your convert.py script expects a quantize flag, make sure it's set to False or omitted for FP16
+          # This runs your script, reading the video checked out from your repo
+          python3 makingCal.py
+
+      - name: Run INT8 Model Conversion
+        run: |
+          # Converts the model using dataset.txt created by makingCal.py
           python3 convert.py yolov5su.onnx output.rknn rk3588
 
       - name: Upload Generated RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov5s-fp16-rknn-model
+          name: yolov5s-int8-rknn-model
           path: output.rknn
