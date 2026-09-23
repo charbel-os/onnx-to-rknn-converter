@@ -1,4 +1,4 @@
-name: Convert YOLOv8n ONNX to RKNN (FP16)
+name: Convert YOLOv8s ONNX to RKNN (INT8)
 
 on:
   push:
@@ -21,15 +21,34 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy opencv-python onnx
+          pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Run FP16 Model Conversion
+      - name: Download YOLOv8s ONNX Model & Prepare Calibration Data
         run: |
-          python3 convert.py yolov8n.onnx output.rknn rk3588
+          # Download official YOLOv8s model and export to onnx if not present in repo
+          python3 -c "from ultralytics import YOLO; model = YOLO('yolov8s.pt'); model.export(format='onnx', imgsz=640, simplify=True)"
+          
+          # Rename exported file to match expected default if necessary
+          if [ -f "yolov8s.onnx" ]; then
+            echo "YOLOv8s ONNX ready."
+          fi
+
+          # Create a dummy calibration image (640x640) required for INT8 quantization
+          python3 -c "
+          import cv2, numpy as np
+          img = np.random.randint(0, 255, (640, 640, 3), dtype=np.uint8)
+          cv2.imwrite('calib_img.jpg', img)
+          with open('dataset.txt', 'w') as f:
+              f.write('calib_img.jpg\n')
+          "
+
+      - name: Run INT8 Model Conversion
+        run: |
+          python3 convert.py yolov8s.onnx output.rknn rk3588
 
       - name: Upload Generated RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov8n-rknn-model
+          name: yolov8s-int8-rknn-model
           path: output.rknn
