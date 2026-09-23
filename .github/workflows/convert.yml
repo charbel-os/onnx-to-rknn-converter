@@ -45,16 +45,47 @@ jobs:
                   f.write(f'{os.path.abspath(f\"calib_images/img_{i:03d}.jpg\")}\n')
           "
 
-      - name: Run Hybrid Quantization Step 1
+      - name: Run Complete Hybrid Quantization Pipeline
         run: |
-          python3 convert.py yolov8s.onnx output.rknn rk3588
+          python3 -c "
+          import sys
+          from rknn.api import RKNN
 
-      - name: Force Output Layers to FP16 in Config & Run Step 2
+          rknn = RKNN(verbose=False)
+          rknn.config(mean_values=[[0, 0, 0]], std_values=[[255, 255, 255]], target_platform='rk3588')
+
+          print('--> Loading ONNX model...')
+          if rknn.load_onnx(model='yolov8s.onnx') != 0:
+              print('Failed to load ONNX')
+              sys.exit(1)
+
+          print('--> Building initial quantized model...')
+          if rknn.build(do_quantization=True, dataset='dataset.txt') != 0:
+              print('Build failed')
+              sys.exit(1)
+
+          # Export to disk first so step 1 finds the context
+          print('--> Exporting intermediate rknn...')
+          rknn.export_rknn('output.rknn')
+
+          print('--> Generating hybrid quantization config...')
+          cfg_path = 'output.rknn.quantization.cfg'
+          if rknn.hybrid_quantization_step1(cfg_path) != 0:
+              print('Hybrid step 1 failed')
+              sys.exit(1)
+          print('Step 1 successful!')
+          "
+
+      - name: Force Output Layers to FP16 and Run Step 2
         run: |
           python3 -c "
           cfg_file = 'output.rknn.quantization.cfg'
-          with open(cfg_file, 'r') as f:
-              lines = f.readlines()
+          try:
+              with open(cfg_file, 'r') as f:
+                  lines = f.readlines()
+          except FileNotFoundError:
+              print(f'Error: {cfg_file} missing!')
+              exit(1)
 
           new_lines = []
           for line in lines:
@@ -67,7 +98,7 @@ jobs:
           
           with open(cfg_file, 'w') as f:
               f.writelines(new_lines)
-          print('Updated config file to force FP16 on sensitive detection layers.')
+          print('Updated config to force FP16 on output layers.')
           "
 
           python3 -c "
@@ -79,7 +110,7 @@ jobs:
               hybrid_quant_cfg='output.rknn.quantization.cfg',
               output_rknn_path='output.rknn'
           )
-          print('Hybrid build finished with exit code:', ret)
+          print('Hybrid build step 2 finished with exit code:', ret)
           if ret != 0:
               exit(1)
           "
