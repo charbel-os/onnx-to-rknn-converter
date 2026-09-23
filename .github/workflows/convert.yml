@@ -52,12 +52,10 @@ jobs:
       - name: Force Output Layers to FP16 in Config & Run Step 2
         run: |
           python3 -c "
-          import re
           cfg_file = 'output.rknn.quantization.cfg'
           with open(cfg_file, 'r') as f:
               lines = f.readlines()
 
-          # Force output detection nodes to float16 to prevent score collapsing
           new_lines = []
           for line in lines:
               if '[custom_quantize_layers]' in line or 'layer_name' in line:
@@ -69,7 +67,7 @@ jobs:
           
           with open(cfg_file, 'w') as f:
               f.writelines(new_lines)
-          print('Updated quantization config file to use FP16 for sensitive layers.')
+          print('Updated config file to force FP16 on sensitive detection layers.')
           "
 
           python3 -c "
