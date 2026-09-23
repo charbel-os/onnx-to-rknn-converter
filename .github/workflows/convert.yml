@@ -12,6 +12,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Download ONNX Model from Hugging Face
+        run: |
+          wget -O ssd-mobilenet-v2.onnx "https://huggingface.co/Kalray/ssd-mobilenet-v2/resolve/main/ssd-mobilenet-v2.onnx"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
