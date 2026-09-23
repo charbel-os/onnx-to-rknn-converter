@@ -1,4 +1,4 @@
-name: Convert YOLOv5s ONNX to RKNN (Pure INT8)
+name: Convert YOLOv5s ONNX to RKNN (FP16)
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
           pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Prepare Calibration Dataset & Export YOLOv5su ONNX
+      - name: Export YOLOv5su ONNX
         run: |
           # Export YOLOv5 (auto-mapped to yolov5su) to ONNX with static shape
           python3 -c "
@@ -40,31 +40,13 @@ jobs:
             exit 1
           fi
 
-          # Automatically download and extract 320+ calibration frames from GitHub source video
-          python3 -c "
-          import cv2, os
-          os.makedirs('calib_images', exist_ok=True)
-          video_url = 'https://github.com/intel-iot-devkit/sample-videos/raw/master/car-detection.mp4'
-          cap = cv2.VideoCapture(video_url)
-          count = 0
-          while cap.isOpened() and count < 320:
-              ret, frame = cap.read()
-              if not ret: break
-              frame_resized = cv2.resize(frame, (640, 640))
-              cv2.imwrite(f'calib_images/img_{count:03d}.jpg', frame_resized)
-              count += 1
-          cap.release()
-          with open('dataset.txt', 'w') as f:
-              for i in range(count):
-                  f.write(f'{os.path.abspath(f\"calib_images/img_{i:03d}.jpg\")}\n')
-          "
-
-      - name: Run Pure INT8 Model Conversion
+      - name: Run FP16 Model Conversion
         run: |
+          # If your convert.py script expects a quantize flag, make sure it's set to False or omitted for FP16
           python3 convert.py yolov5su.onnx output.rknn rk3588
 
       - name: Upload Generated RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov5s-int8-rknn-model
+          name: yolov5s-fp16-rknn-model
           path: output.rknn
