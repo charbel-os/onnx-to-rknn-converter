@@ -1,4 +1,4 @@
-name: Convert YOLOv8s Hybrid RKNN (INT8/FP16 Hybrid)
+name: Convert YOLOv5s ONNX to RKNN (Pure INT8)
 
 on:
   push:
@@ -23,10 +23,12 @@ jobs:
           pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Prepare Calibration Dataset & Export ONNX
+      - name: Prepare Calibration Dataset & Export YOLOv5s ONNX
         run: |
-          python3 -c "from ultralytics import YOLO; model = YOLO('yolov8s.pt'); model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)"
+          # Export YOLOv5s to ONNX with static shape (dynamic=False is required for RKNN)
+          python3 -c "from ultralytics import YOLO; model = YOLO('yolov5s.pt'); model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)"
           
+          # Automatically download and extract 300+ calibration frames
           python3 -c "
           import cv2, os
           os.makedirs('calib_images', exist_ok=True)
@@ -45,78 +47,12 @@ jobs:
                   f.write(f'{os.path.abspath(f\"calib_images/img_{i:03d}.jpg\")}\n')
           "
 
-      - name: Run Complete Hybrid Quantization Pipeline
+      - name: Run Pure INT8 Model Conversion
         run: |
-          python3 -c "
-          import sys
-          from rknn.api import RKNN
+          python3 convert.py yolov5s.onnx output.rknn rk3588
 
-          rknn = RKNN(verbose=False)
-          rknn.config(mean_values=[[0, 0, 0]], std_values=[[255, 255, 255]], target_platform='rk3588')
-
-          print('--> Loading ONNX model...')
-          if rknn.load_onnx(model='yolov8s.onnx') != 0:
-              print('Failed to load ONNX')
-              sys.exit(1)
-
-          print('--> Building initial quantized model...')
-          if rknn.build(do_quantization=True, dataset='dataset.txt') != 0:
-              print('Build failed')
-              sys.exit(1)
-
-          # Export to disk first so step 1 finds the context
-          print('--> Exporting intermediate rknn...')
-          rknn.export_rknn('output.rknn')
-
-          print('--> Generating hybrid quantization config...')
-          cfg_path = 'output.rknn.quantization.cfg'
-          if rknn.hybrid_quantization_step1(cfg_path) != 0:
-              print('Hybrid step 1 failed')
-              sys.exit(1)
-          print('Step 1 successful!')
-          "
-
-      - name: Force Output Layers to FP16 and Run Step 2
-        run: |
-          python3 -c "
-          cfg_file = 'output.rknn.quantization.cfg'
-          try:
-              with open(cfg_file, 'r') as f:
-                  lines = f.readlines()
-          except FileNotFoundError:
-              print(f'Error: {cfg_file} missing!')
-              exit(1)
-
-          new_lines = []
-          for line in lines:
-              if '[custom_quantize_layers]' in line or 'layer_name' in line:
-                  new_lines.append(line)
-              elif 'quantize =' in line:
-                  new_lines.append('quantize = FP16\n')
-              else:
-                  new_lines.append(line)
-          
-          with open(cfg_file, 'w') as f:
-              f.writelines(new_lines)
-          print('Updated config to force FP16 on output layers.')
-          "
-
-          python3 -c "
-          from rknn.api import RKNN
-          rknn = RKNN()
-          ret = rknn.hybrid_quantization_step2(
-              model_input='yolov8s.onnx',
-              data='dataset.txt',
-              hybrid_quant_cfg='output.rknn.quantization.cfg',
-              output_rknn_path='output.rknn'
-          )
-          print('Hybrid build step 2 finished with exit code:', ret)
-          if ret != 0:
-              exit(1)
-          "
-
-      - name: Upload Hybrid RKNN Model Artifact
+      - name: Upload Generated RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov8s-hybrid-rknn-model
+          name: yolov5s-int8-rknn-model
           path: output.rknn
