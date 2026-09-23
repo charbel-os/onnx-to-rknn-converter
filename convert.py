@@ -13,6 +13,7 @@ def convert_model(onnx_path, output_path, platform="rk3588"):
     rknn = RKNN(verbose=True)
 
     print(f'--> Configuring model settings for platform: {platform}')
+    # Standard normalization config for YOLOv8 (scales pixel inputs from 0-255 to 0-1)
     rknn.config(
         mean_values=[[0, 0, 0]], 
         std_values=[[255, 255, 255]], 
@@ -25,11 +26,16 @@ def convert_model(onnx_path, output_path, platform="rk3588"):
         print('Failed to load ONNX model!')
         sys.exit(1)
 
-    # FP16 compilation uses do_quantization=False (no calibration dataset needed)
-    print('--> Building model as FP16 (do_quantization=False)...')
-    ret = rknn.build(do_quantization=False)
+    # INT8 Quantization requires a dataset.txt pointing to representative images
+    dataset_path = 'dataset.txt'
+    if not os.path.exists(dataset_path):
+        print(f"ERROR: Quantization dataset file '{dataset_path}' is missing!")
+        sys.exit(1)
+
+    print(f'--> Building model as INT8 using dataset: {dataset_path}...')
+    ret = rknn.build(do_quantization=True, dataset=dataset_path)
     if ret != 0:
-        print('Failed to build RKNN FP16 model!')
+        print('Failed to build RKNN INT8 model!')
         sys.exit(1)
 
     print(f'--> Exporting RKNN model to: {output_path}')
@@ -38,13 +44,13 @@ def convert_model(onnx_path, output_path, platform="rk3588"):
         print('Failed to export RKNN model!')
         sys.exit(1)
 
-    print('--> FP16 Conversion completed successfully!')
+    print('--> INT8 Quantization & Conversion completed successfully!')
     rknn.release()
 
 if __name__ == '__main__':
     workspace_dir = os.getenv('GITHUB_WORKSPACE', '.')
 
-    default_onnx = os.path.join(workspace_dir, 'yolov8n.onnx')
+    default_onnx = os.path.join(workspace_dir, 'yolov8s.onnx')
     default_output = os.path.join(workspace_dir, 'output.rknn')
 
     onnx_file = sys.argv[1] if len(sys.argv) > 1 else default_onnx
