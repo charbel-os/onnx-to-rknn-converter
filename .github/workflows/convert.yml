@@ -23,8 +23,11 @@ jobs:
           pip install numpy opencv-python onnx ultralytics
           pip install rknn-toolkit2
 
-      - name: Prepare Calibration Dataset & Export YOLOv5s ONNX
+      - name: Download YOLOv5s Weights from GitHub & Export to ONNX
         run: |
+          # Download official v7.0 yolov5s.pt directly from GitHub releases
+          curl -L -O https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt
+
           # Export YOLOv5s to ONNX with static shape
           python3 -c "
           from ultralytics import YOLO
@@ -40,7 +43,8 @@ jobs:
             exit 1
           fi
 
-          # Automatically download and extract 300+ calibration frames
+      - name: Download Calibration Dataset from GitHub Source
+        run: |
           python3 -c "
           import cv2, os
           os.makedirs('calib_images', exist_ok=True)
