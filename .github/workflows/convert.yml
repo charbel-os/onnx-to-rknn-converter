@@ -25,9 +25,21 @@ jobs:
 
       - name: Prepare Calibration Dataset & Export YOLOv5s ONNX
         run: |
-          # Export YOLOv5s to ONNX with static shape (dynamic=False is required for RKNN)
-          python3 -c "from ultralytics import YOLO; model = YOLO('yolov5s.pt'); model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)"
+          # Export YOLOv5s to ONNX with static shape
+          python3 -c "
+          from ultralytics import YOLO
+          model = YOLO('yolov5s.pt')
+          model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)
+          "
           
+          # Verify the onnx file exists and is in the root directory
+          if [ -f "yolov5s.onnx" ]; then
+            echo "SUCCESS: yolov5s.onnx found."
+          else
+            echo "ERROR: yolov5s.onnx not found after export!"
+            exit 1
+          fi
+
           # Automatically download and extract 300+ calibration frames
           python3 -c "
           import cv2, os
