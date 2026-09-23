@@ -3,21 +3,16 @@ from rknn.api import RKNN
 
 
 def main():
-  if len(sys.argv) < 4:
-    print("Usage: python3 convert.py <onnx_path> <rknn_path> <target_platform>")
-    sys.exit(1)
+  onnx_path = "ssd-mobilenet-v2.onnx"
+  rknn_output_path = "ssd_mobilenet_v2_fp16.rknn"
 
-  onnx_path = sys.argv[1]
-  rknn_path = sys.argv[2]
-  target_platform = sys.argv[3]
+  rknn = RKNN(verbose=True)
 
-  rknn = RKNN(verbose=False)
-
-  print("--> Configuring model settings...")
+  print("--> Configuring NPU target...")
   rknn.config(
-      mean_values=[[0, 0, 0]],
-      std_values=[[255, 255, 255]],
-      target_platform=target_platform,
+      mean_values=[[127.5, 127.5, 127.5]],
+      std_values=[[127.5, 127.5, 127.5]],
+      target_platform="rk3588",
   )
 
   print(f"--> Loading ONNX model: {onnx_path}")
@@ -25,23 +20,18 @@ def main():
     print("Failed to load ONNX model.")
     sys.exit(1)
 
-  print("--> Building model with pure INT8 quantization and calibration...")
-  # This looks for the dataset.txt created by makingCal.py
-  if (
-      rknn.build(
-          do_quantization=True, dataset="rknn_calib_images/dataset.txt"
-      )
-      != 0
-  ):
+  print("--> Building FP16 model (No calibration needed)...")
+  if rknn.build(do_quantization=False) != 0:
     print("Build failed.")
     sys.exit(1)
 
-  print(f"--> Exporting RKNN model to: {rknn_path}")
-  if rknn.export_rknn(rknn_path) != 0:
+  print(f"--> Exporting RKNN model to {rknn_output_path}...")
+  if rknn.export_rknn(rknn_output_path) != 0:
     print("Export failed.")
     sys.exit(1)
 
-  print("Success! YOLOv5 INT8 model created.")
+  print("Success! FP16 RKNN model built successfully.")
+  rknn.release()
 
 
 if __name__ == "__main__":
