@@ -7,7 +7,7 @@ def main():
     rknn_output_path = f"yolov8s_{img_size}_int8.rknn"
     
     # Path to your calibration text file
-    calib_dataset_path = "dataset.txt"
+    calib_dataset_path = "dataset640.txt"
 
     print(f"--> Step 1: Loading YOLOv8s pre-trained model (imgsz={img_size})...")
     model = YOLO("yolov8s.pt")
@@ -43,7 +43,7 @@ def main():
         print("Export failed.")
         sys.exit(1)
 
-    print(f"Success! YOLOv8m (imgsz={img_size}) INT8 RKNN model built successfully and saved to {rknn_output_path}.")
+    print(f"Success! YOLOv8s (imgsz={img_size}) INT8 RKNN model built successfully and saved to {rknn_output_path}.")
     rknn.release()
 
 if __name__ == "__main__":
