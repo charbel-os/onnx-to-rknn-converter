@@ -3,14 +3,14 @@ from rknn.api import RKNN
 from ultralytics import YOLO
 
 def main():
-    img_size = 416
-    rknn_output_path = f"yolov8m_{img_size}_int8.rknn"
+    img_size = 640
+    rknn_output_path = f"yolov8s_{img_size}_int8.rknn"
     
     # Path to your calibration text file
     calib_dataset_path = "dataset.txt"
 
-    print(f"--> Step 1: Loading YOLOv8m pre-trained model (imgsz={img_size})...")
-    model = YOLO("yolov8m.pt")
+    print(f"--> Step 1: Loading YOLOv8s pre-trained model (imgsz={img_size})...")
+    model = YOLO("yolov8s.pt")
 
     print(f"--> Step 2: Exporting model to ONNX (imgsz={img_size})...")
     onnx_path = model.export(format="onnx", imgsz=img_size, simplify=True)
@@ -25,7 +25,7 @@ def main():
         mean_values=[[0, 0, 0]],
         std_values=[[255, 255, 255]],
         quantized_dtype="w8a8",       # Correct syntax for v2.3.2 standard INT8
-        optimization_level=3          # Forces maximum graph optimization layers
+        optimization_level=5          # Forces maximum graph optimization layers
     )
 
     print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
