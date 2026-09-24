@@ -4,14 +4,12 @@ from ultralytics import YOLO
 
 def main():
     img_size = 416
-    # Upgraded output name for YOLOv8m INT8
     rknn_output_path = f"yolov8m_{img_size}_int8.rknn"
     
     # Path to your calibration text file
     calib_dataset_path = "dataset.txt"
 
     print(f"--> Step 1: Loading YOLOv8m pre-trained model (imgsz={img_size})...")
-    # Upgraded from yolov8s.pt to yolov8m.pt for enhanced feature learning
     model = YOLO("yolov8m.pt")
 
     print(f"--> Step 2: Exporting model to ONNX (imgsz={img_size})...")
@@ -21,13 +19,13 @@ def main():
     print("--> Step 3: Configuring top-tier NPU target & pixel normalization for RK3588...")
     rknn = RKNN(verbose=True)
     
-    # TOP-TIER CONFIGURATION
+    # TOP-TIER CONFIGURATION (Updated for RKNN-Toolkit2 v2.3.2+)
     rknn.config(
         target_platform="rk3588",
         mean_values=[[0, 0, 0]],
         std_values=[[255, 255, 255]],
-        quantized_dtype="asymmetric_quantized-u8",  # Maximizes activation range precision
-        optimization_level=3                      # Enforces highest-level graph fusion optimizations
+        quantized_dtype="w8a8",       # Correct syntax for v2.3.2 standard INT8
+        optimization_level=3          # Forces maximum graph optimization layers
     )
 
     print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
