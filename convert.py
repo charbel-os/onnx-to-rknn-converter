@@ -83,19 +83,28 @@ def main():
 
     # Map final output layers to float16 to preserve bounding-box precision
     custom_layers_dict = {name: "float16" for name in output_names}
-    replacement_str = "custom_quantize_layers: " + json.dumps(custom_layers_dict)
 
+    # Read config lines, safely inject/replace custom_quantize_layers property block
     with open(cfg_file, "r") as f:
-        cfg_content = f.read()
+        lines = f.readlines()
 
-    if "custom_quantize_layers: {}" in cfg_content:
-        cfg_content = cfg_content.replace("custom_quantize_layers: {}", replacement_str)
-    else:
-        cfg_content += f"\n{replacement_str}\n"
+    updated_lines = []
+    found_custom_layer_prop = False
+    for line in lines:
+        if line.strip().startswith("custom_quantize_layers"):
+            updated_lines.append(f"custom_quantize_layers: {json.dumps(custom_layers_dict)}\n")
+            found_custom_layer_prop = True
+        else:
+            updated_lines.append(line)
+
+    # If it wasn't present in the template file at all, append it properly formatted
+    if not found_custom_layer_prop:
+        updated_lines.append(f"\ncustom_quantize_layers: {json.dumps(custom_layers_dict)}\n")
 
     with open(cfg_file, "w") as f:
-        f.write(cfg_content)
-    print(f"--> Successfully injected FP16 overrides for: {custom_layers_dict}")
+        f.writelines(updated_lines)
+
+    print(f"--> Successfully injected FP16 overrides into {cfg_file} for: {custom_layers_dict}")
 
     print("--> Step 8: Running Hybrid Quantization Step 2 (Building hybrid model)...")
     ret = rknn.hybrid_quantization_step2(
