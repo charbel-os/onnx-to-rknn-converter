@@ -9,8 +9,14 @@ from ultralytics import YOLO
 def main():
     img_size = 640
     rknn_output_path = f"yolov8s_{img_size}_hybrid.rknn"
-    dataset_dir = "dataset640"
     calib_dataset_path = "dataset640.txt"
+
+    # Resolve absolute paths based on current repository root working directory
+    repo_root = os.getcwd()
+    full_calib_path = os.path.join(repo_root, calib_dataset_path)
+
+    print(f"--> Repository Root: {repo_root}")
+    print(f"--> Calibration Dataset File: {full_calib_path}")
 
     print(f"--> Step 1: Loading YOLOv8s pre-trained model (imgsz={img_size})...")
     model = YOLO("yolov8s.pt")
@@ -34,33 +40,22 @@ def main():
         print("❌ ERROR: Failed to load ONNX model.")
         sys.exit(1)
 
-    # Verify dataset directory exists in your repository
-    if not os.path.exists(dataset_dir):
-        print(f"❌ ERROR: Dataset directory '{dataset_dir}' not found in repository!")
+    # Verify that dataset640.txt exists at repo root
+    if not os.path.exists(full_calib_path):
+        print(f"❌ ERROR: Calibration file '{full_calib_path}' not found at repository root!")
+        print(f"--> Directory contents of {repo_root}: {os.listdir(repo_root)}")
         sys.exit(1)
 
-    # Dynamically scan dataset640 folder to build absolute path text file for RKNN toolkit
-    print(f"--> Step 5: Scanning '{dataset_dir}' directory for calibration images...")
-    valid_extensions = (".jpg", ".jpeg", ".png", ".bmp")
-    image_files = []
-    for root, _, files in os.walk(dataset_dir):
-        for file in files:
-            if file.lower().endswith(valid_extensions):
-                abs_path = os.path.abspath(os.path.join(root, file))
-                image_files.append(abs_path)
-
-    if not image_files:
-        print(f"❌ ERROR: No valid images found inside '{dataset_dir}' folder!")
-        sys.exit(1)
-
-    with open(calib_dataset_path, "w") as f:
-        for img_path in image_files:
-            f.write(img_path + "\n")
+    print(f"--> Step 5: Validating entries in '{calib_dataset_path}'...")
+    with open(full_calib_path, "r") as f:
+        calib_lines = [line.strip() for line in f if line.strip()]
     
-    print(f"--> Generated '{calib_dataset_path}' successfully with {len(image_files)} calibration images.")
+    print(f"--> Found {len(calib_lines)} image paths listed in {calib_dataset_path}")
+    if len(calib_lines) > 0:
+        print(f"--> First entry in text file: '{calib_lines[0]}'")
 
     print("--> Step 6: Running Hybrid Quantization Step 1 (Generating config template)...")
-    ret = rknn.hybrid_quantization_step1(dataset=calib_dataset_path, proposal=True)
+    ret = rknn.hybrid_quantization_step1(dataset=full_calib_path, proposal=True)
     if ret != 0:
         print("❌ ERROR: Hybrid quantization step 1 failed.")
         sys.exit(1)
