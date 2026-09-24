@@ -25,9 +25,9 @@ jobs:
       - name: Run Hybrid Conversion and Quantization Script
         run: python convert.py
 
-      - name: Upload Hybrid RKNN Model Artifact
+      - name: Upload Comprehensive Debug & Model Artifacts
         uses: actions/upload-artifact@v4
         with:
-            name: yolov8s-img640-hybrid-rknn
-            path: yolov8s_640_hybrid.rknn
+            name: yolov8s-rknn-debug-bundle
+            path: rknn_debug_artifacts/
             if-no-files-found: error
