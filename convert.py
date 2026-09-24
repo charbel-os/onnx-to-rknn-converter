@@ -1,4 +1,5 @@
 import sys
+import os
 from rknn.api import RKNN
 from ultralytics import YOLO
 
@@ -19,13 +20,12 @@ def main():
     print("--> Step 3: Configuring top-tier NPU target & pixel normalization for RK3588...")
     rknn = RKNN(verbose=True)
     
-    # TOP-TIER CONFIGURATION (Updated for RKNN-Toolkit2 v2.3.2+)
     rknn.config(
         target_platform="rk3588",
         mean_values=[[0, 0, 0]],
         std_values=[[255, 255, 255]],
-        quantized_dtype="w8a8",       # Correct syntax for v2.3.2 standard INT8
-        optimization_level=3          # Forces maximum graph optimization layers
+        quantized_dtype="w8a8",
+        optimization_level=3
     )
 
     print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
@@ -33,7 +33,29 @@ def main():
         print("Failed to load ONNX model.")
         sys.exit(1)
 
+    # --- DEBUGGING BLOCK: Verify Dataset & Calibration Paths ---
+    print(f"--> Debug: Checking calibration dataset: {calib_dataset_path}")
+    if not os.path.exists(calib_dataset_path):
+        print(f"❌ ERROR: Calibration file '{calib_dataset_path}' not found in working directory!")
+        sys.exit(1)
+        
+    with open(calib_dataset_path, 'r') as f:
+        calib_lines = [line.strip() for line in f if line.strip()]
+        
+    print(f"--> Debug: Successfully read {len(calib_lines)} lines from {calib_dataset_path}")
+    if len(calib_lines) > 0:
+        print(f"--> Debug: First image path listed: '{calib_lines[0]}'")
+        if os.path.exists(calib_lines[0]):
+            print(f"--> Debug: ✔ Verified first image exists on disk.")
+        else:
+            print(f"--> Warning: ⚠ First image path does NOT exist on disk! Check your relative paths.")
+    else:
+        print(f"❌ ERROR: Calibration file '{calib_dataset_path}' is empty!")
+        sys.exit(1)
+    # -----------------------------------------------------------
+
     print("--> Step 5: Building INT8 RKNN model with calibration dataset...")
+    # When do_quantization=True and dataset is passed, RKNN-Toolkit2 reads this file line-by-line
     if rknn.build(do_quantization=True, dataset=calib_dataset_path) != 0:
         print("Build and quantization failed.")
         sys.exit(1)
