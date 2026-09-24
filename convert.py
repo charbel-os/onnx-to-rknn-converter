@@ -5,8 +5,6 @@ from ultralytics import YOLO
 
 def main():
     img_size = 412
-    # Ultralytics exports using the base weights name by default
-    onnx_path = "yolov8s.onnx"
     rknn_output_path = f"yolov8s_{img_size}_fp16.rknn"
 
     print(f"--> Step 1: Training/Fine-tuning YOLOv8s (imgsz={img_size})...")
@@ -14,13 +12,15 @@ def main():
     model.train(data="coco8.yaml", epochs=1, imgsz=img_size, batch=4)
 
     print(f"--> Step 2: Exporting trained model to ONNX (imgsz={img_size})...")
-    model.export(format="onnx", imgsz=img_size, simplify=True)
+    # model.export() returns the exact file path string of the saved ONNX model
+    onnx_path = model.export(format="onnx", imgsz=img_size, simplify=True)
+    print(f"--> ONNX model generated at: {onnx_path}")
 
     print("--> Step 3: Configuring NPU target for ROCK 5C (RK3588)...")
     rknn = RKNN(verbose=True)
     rknn.config(target_platform="rk3588")
 
-    print(f"--> Step 4: Loading ONNX model: {onnx_path}")
+    print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
     if rknn.load_onnx(model=onnx_path) != 0:
         print("Failed to load ONNX model.")
         sys.exit(1)
