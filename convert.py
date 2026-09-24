@@ -4,27 +4,30 @@ from ultralytics import YOLO
 
 def main():
     img_size = 416
-    # Change output name to reflect INT8 quantization
-    rknn_output_path = f"yolov8s_{img_size}_int8.rknn"
+    # Upgraded output name for YOLOv8m INT8
+    rknn_output_path = f"yolov8m_{img_size}_int8.rknn"
     
-    # Path to your calibration text file (relative or absolute)
-    # Ensure your dataset.txt lists paths to images inside your calib_img directory
+    # Path to your calibration text file
     calib_dataset_path = "dataset.txt"
 
-    print(f"--> Step 1: Loading YOLOv8s pre-trained model (imgsz={img_size})...")
-    model = YOLO("yolov8s.pt")
+    print(f"--> Step 1: Loading YOLOv8m pre-trained model (imgsz={img_size})...")
+    # Upgraded from yolov8s.pt to yolov8m.pt for enhanced feature learning
+    model = YOLO("yolov8m.pt")
 
     print(f"--> Step 2: Exporting model to ONNX (imgsz={img_size})...")
     onnx_path = model.export(format="onnx", imgsz=img_size, simplify=True)
     print(f"--> ONNX model generated successfully at: {onnx_path}")
 
-    print("--> Step 3: Configuring NPU target & pixel normalization for ROCK 5C (RK3588)...")
+    print("--> Step 3: Configuring top-tier NPU target & pixel normalization for RK3588...")
     rknn = RKNN(verbose=True)
     
+    # TOP-TIER CONFIGURATION
     rknn.config(
         target_platform="rk3588",
         mean_values=[[0, 0, 0]],
-        std_values=[[255, 255, 255]]
+        std_values=[[255, 255, 255]],
+        quantized_dtype="asymmetric_quantized-u8",  # Maximizes activation range precision
+        optimization_level=3                      # Enforces highest-level graph fusion optimizations
     )
 
     print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
@@ -33,7 +36,6 @@ def main():
         sys.exit(1)
 
     print("--> Step 5: Building INT8 RKNN model with calibration dataset...")
-    # CRITICAL: Enable quantization and pass the dataset.txt file for INT8 calibration
     if rknn.build(do_quantization=True, dataset=calib_dataset_path) != 0:
         print("Build and quantization failed.")
         sys.exit(1)
@@ -43,7 +45,7 @@ def main():
         print("Export failed.")
         sys.exit(1)
 
-    print(f"Success! YOLOv8s (imgsz={img_size}) INT8 RKNN model built successfully and saved to {rknn_output_path}.")
+    print(f"Success! YOLOv8m (imgsz={img_size}) INT8 RKNN model built successfully and saved to {rknn_output_path}.")
     rknn.release()
 
 if __name__ == "__main__":
