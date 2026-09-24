@@ -1,4 +1,4 @@
-name: Build YOLOv8n FP16 RKNN Model
+name: Train and Export YOLOv8s RKNN Model
 
 on:
   push:
@@ -22,15 +22,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install ultralytics "onnx<1.19" rknn-toolkit2
 
-      - name: Export YOLOv8n.pt to ONNX
-        run: |
-          python -c "from ultralytics import YOLO; model = YOLO('yolov8n.pt'); model.export(format='onnx', imgsz=640, simplify=True)"
-
-      - name: Run Conversion Script
+      - name: Run Training and Export Script
         run: python convert.py
 
       - name: Upload RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov8n-fp16-rknn
-          path: yolov8n_fp16.rknn
+          name: yolov8s-img412-fp16-rknn
+          path: yolov8s_412_fp16.rknn
