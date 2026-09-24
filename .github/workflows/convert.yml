@@ -28,5 +28,5 @@ jobs:
       - name: Upload RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov8s-img412-fp16-rknn
-          path: yolov8s_412_fp16.rknn
+          name: yolov8s-img416-fp16-rknn
+          path: yolov8s_416_fp16.rknn
