@@ -2,23 +2,27 @@ import sys
 from rknn.api import RKNN
 from ultralytics import YOLO
 
-
 def main():
     img_size = 416
     rknn_output_path = f"yolov8s_{img_size}_fp16.rknn"
 
-    print(f"--> Step 1: Training/Fine-tuning YOLOv8s (imgsz={img_size})...")
+    print(f"--> Step 1: Loading YOLOv8s pre-trained model (imgsz={img_size})...")
+    # Load official pre-trained weights directly to maintain full COCO accuracy
     model = YOLO("yolov8s.pt")
-    model.train(data="coco8.yaml", epochs=1, imgsz=img_size, batch=4)
 
-    print(f"--> Step 2: Exporting trained model to ONNX (imgsz={img_size})...")
-    # model.export() returns the exact file path string of the saved ONNX model
+    print(f"--> Step 2: Exporting model to ONNX (imgsz={img_size})...")
     onnx_path = model.export(format="onnx", imgsz=img_size, simplify=True)
-    print(f"--> ONNX model generated at: {onnx_path}")
+    print(f"--> ONNX model generated successfully at: {onnx_path}")
 
-    print("--> Step 3: Configuring NPU target for ROCK 5C (RK3588)...")
+    print("--> Step 3: Configuring NPU target & pixel normalization for ROCK 5C (RK3588)...")
     rknn = RKNN(verbose=True)
-    rknn.config(target_platform="rk3588")
+    
+    # CRITICAL FIX: Add mean_values and std_values for proper NPU tensor scaling
+    rknn.config(
+        target_platform="rk3588",
+        mean_values=[[0, 0, 0]],
+        std_values=[[255, 255, 255]]
+    )
 
     print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
     if rknn.load_onnx(model=onnx_path) != 0:
@@ -35,11 +39,8 @@ def main():
         print("Export failed.")
         sys.exit(1)
 
-    print(
-        f"Success! YOLOv8s (imgsz={img_size}) FP16 RKNN model built successfully."
-    )
+    print(f"Success! YOLOv8s (imgsz={img_size}) FP16 RKNN model built successfully and saved to {rknn_output_path}.")
     rknn.release()
-
 
 if __name__ == "__main__":
     main()
