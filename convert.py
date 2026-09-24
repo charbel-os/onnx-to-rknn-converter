@@ -4,7 +4,7 @@ from ultralytics import YOLO
 
 
 def main():
-    img_size = 412
+    img_size = 416
     rknn_output_path = f"yolov8s_{img_size}_fp16.rknn"
 
     print(f"--> Step 1: Training/Fine-tuning YOLOv8s (imgsz={img_size})...")
