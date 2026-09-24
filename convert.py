@@ -5,19 +5,15 @@ from ultralytics import YOLO
 
 def main():
     img_size = 412
-    # YOLOv8s exports to yolov8s.onnx by default when using yolov8s.pt
-    onnx_path = f"yolov8s_{img_size}.onnx"
+    # Ultralytics exports using the base weights name by default
+    onnx_path = "yolov8s.onnx"
     rknn_output_path = f"yolov8s_{img_size}_fp16.rknn"
 
-    print(
-        f"--> Step 1: Training/Fine-tuning YOLOv8s (imgsz={img_size})..."
-    )
-    # Using 'yolov8s.pt' base weights and lightweight coco8.yaml dataset
+    print(f"--> Step 1: Training/Fine-tuning YOLOv8s (imgsz={img_size})...")
     model = YOLO("yolov8s.pt")
     model.train(data="coco8.yaml", epochs=1, imgsz=img_size, batch=4)
 
     print(f"--> Step 2: Exporting trained model to ONNX (imgsz={img_size})...")
-    # Ultralytics appends the size if specified or renames; we ensure correct naming
     model.export(format="onnx", imgsz=img_size, simplify=True)
 
     print("--> Step 3: Configuring NPU target for ROCK 5C (RK3588)...")
