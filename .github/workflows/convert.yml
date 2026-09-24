@@ -1,4 +1,4 @@
-name: Train and Export YOLOv8s RKNN Model
+name: Train and Export YOLOv8s INT8 RKNN Model
 
 on:
   push:
@@ -15,18 +15,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+            python-version: '3.10'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ultralytics "onnx<1.19" rknn-toolkit2
 
-      - name: Run Training and Export Script
+      - name: Run Conversion and INT8 Quantization Script
         run: python convert.py
 
-      - name: Upload RKNN Model Artifact
+      - name: Upload INT8 RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yolov8s-img416-fp16-rknn
-          path: yolov8s_416_fp16.rknn
+            name: yolov8s-img416-int8-rknn
+            path: yolov8s_416_int8.rknn
+            if-no-files-found: error # <--- This will throw an error instead of hiding it
