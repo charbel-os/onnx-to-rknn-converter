@@ -25,7 +25,7 @@ def main():
         mean_values=[[0, 0, 0]],
         std_values=[[255, 255, 255]],
         quantized_dtype="w8a8",       # Correct syntax for v2.3.2 standard INT8
-        optimization_level=5          # Forces maximum graph optimization layers
+        optimization_level=3          # Forces maximum graph optimization layers
     )
 
     print(f"--> Step 4: Loading ONNX model from: {onnx_path}")
