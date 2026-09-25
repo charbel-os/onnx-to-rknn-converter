@@ -1,6 +1,7 @@
 import sys
 import os
 import torch
+import torchvision  # <-- Crucial: Must be imported before torch.hub.load to register C++ operators like NMS
 import onnx
 from rknn.api import RKNN
 
