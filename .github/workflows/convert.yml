@@ -30,7 +30,7 @@ jobs:
         run: |
             wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
             python yolov7/export.py --weights yolov7-tiny.pt --img-size 416 416 --simplify
-            mv yolov7/yolov7-tiny.onnx ./yolov7-tiny.onnx
+            # Note: export.py saves yolov7-tiny.onnx directly in the root directory, no move required.
 
       - name: Run RKNN FP16 Conversion Script
         run: python convert.py
