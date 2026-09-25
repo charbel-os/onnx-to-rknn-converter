@@ -1,7 +1,7 @@
 import sys
 import os
 import torch
-import torchvision  # <-- Crucial: Must be imported before torch.hub.load to register C++ operators like NMS
+import torchvision
 import onnx
 from rknn.api import RKNN
 
@@ -11,7 +11,8 @@ def main():
     onnx_path = "yolov7s.onnx"
 
     print(f"--> Step 1: Loading YOLOv7s pre-trained model and exporting to ONNX (imgsz={img_size})...")
-    model = torch.hub.load('WongKinYiu/yolov7', 'custom', path='yolov7s.pt', force_reload=False)
+    # Pass weights file positionally and include trust_repo=True
+    model = torch.hub.load('WongKinYiu/yolov7', 'custom', 'yolov7s.pt', trust_repo=True, force_reload=False)
     model.eval()
 
     print(f"--> Step 2: Exporting PyTorch model to ONNX...")
