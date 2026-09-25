@@ -12,6 +12,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Clone Official YOLOv7 Repository
+        run: git clone https://github.com/WongKinYiu/yolov7.git
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -20,9 +23,7 @@ jobs:
       - name: Install Dependencies
         run: |
             python -m pip install --upgrade pip
-            # Explicitly install matching, pinned versions of torch and torchvision to avoid C++ operator mismatches
             pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
-            # Install remaining required packages
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn "onnx<1.19" rknn-toolkit2
 
       - name: Run FP16 Conversion Script
