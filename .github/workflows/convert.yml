@@ -24,9 +24,15 @@ jobs:
         run: |
             python -m pip install --upgrade pip
             pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
-            pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn "onnx<1.19" rknn-toolkit2
+            pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" rknn-toolkit2
 
-      - name: Run FP16 Conversion Script
+      - name: Download YOLOv7-tiny Weights & Export to ONNX
+        run: |
+            wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
+            python yolov7/export.py --weights yolov7-tiny.pt --img-size 416 416 --simplify
+            mv yolov7/yolov7-tiny.onnx ./yolov7-tiny.onnx
+
+      - name: Run RKNN FP16 Conversion Script
         run: python convert.py
 
       - name: Upload FP16 RKNN Model Artifact
