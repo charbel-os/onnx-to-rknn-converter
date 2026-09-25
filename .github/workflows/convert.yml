@@ -1,4 +1,4 @@
-name: Build FP16 YOLOv7s RKNN Model (RK3588)
+name: Build FP16 YOLOv7-tiny RKNN Model (RK3588)
 
 on:
   push:
@@ -32,6 +32,6 @@ jobs:
       - name: Upload FP16 RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov7s-rknn-fp16
-            path: yolov7s_416_fp16.rknn
+            name: yolov7-tiny-rknn-fp16
+            path: yolov7-tiny_416_fp16.rknn
             if-no-files-found: error
