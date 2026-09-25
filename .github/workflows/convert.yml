@@ -20,10 +20,10 @@ jobs:
       - name: Install Dependencies
         run: |
             python -m pip install --upgrade pip
-            # Install all required dependencies directly from YOLOv7's requirements file
-            pip install -r https://raw.githubusercontent.com/WongKinYiu/yolov7/main/requirements.txt
-            # Ensure rknn-toolkit2 and a compatible onnx version are installed
-            pip install "onnx<1.19" rknn-toolkit2
+            # Explicitly install matching torch and torchvision binaries (CPU version is sufficient for ONNX export)
+            pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+            # Install remaining required packages safely
+            pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn "onnx<1.19" rknn-toolkit2
 
       - name: Run FP16 Conversion Script
         run: python convert.py
