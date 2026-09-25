@@ -5,17 +5,17 @@ import torchvision
 import onnx
 from rknn.api import RKNN
 
-# Add the cloned yolov7 directory to the python path so we can import its internal modules safely
+# Add the cloned yolov7 directory to the python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'yolov7')))
 from models.experimental import attempt_load
 
 def main():
     img_size = 416
-    rknn_output_path = f"yolov7s_{img_size}_fp16.rknn"
-    onnx_path = "yolov7s.onnx"
+    rknn_output_path = f"yolov7-tiny_{img_size}_fp16.rknn"
+    onnx_path = "yolov7-tiny.onnx"
 
-    print(f"--> Step 1: Loading YOLOv7s pre-trained model using attempt_load (imgsz={img_size})...")
-    model = attempt_load('yolov7s.pt', map_location='cpu')
+    print(f"--> Step 1: Loading YOLOv7-tiny pre-trained model using attempt_load (imgsz={img_size})...")
+    model = attempt_load('yolov7-tiny.pt', map_location='cpu')
     model.eval()
 
     print(f"--> Step 2: Exporting PyTorch model to ONNX...")
@@ -64,7 +64,7 @@ def main():
         print("❌ ERROR: Model export failed.")
         sys.exit(1)
 
-    print(f"Success! FP16 YOLOv7s RKNN model saved as '{rknn_output_path}'.")
+    print(f"Success! FP16 YOLOv7-tiny RKNN model saved as '{rknn_output_path}'.")
     rknn.release()
 
 if __name__ == "__main__":
