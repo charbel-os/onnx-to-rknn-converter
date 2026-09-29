@@ -1,4 +1,4 @@
-import sys
+    # 1. Professional Configuration for RK3588 NPUimport sys
 from rknn.api import RKNN
 
 ONNX_MODEL = 'yolov8s.onnx'
@@ -16,11 +16,10 @@ def main():
         target_platform='rk3588',
         quant_img_RGB2BGR=True,
         
-        # High-tier accuracy settings
+        # High-tier accuracy settings supported by RKNN-Toolkit2 v2.3.2
         quantized_algorithm='mmse',      # Minimizes quantization loss for better bounding box confidence
         quantized_method='channel',      # Channel-wise precision distribution
-        optimization_level=3,            # Full graph optimization (Conv+BN fusion, dead node stripping)
-        merge_sigmoid_relu=True          # Stabilizes activation mapping for YOLO heads
+        optimization_level=3             # Full graph optimization (Conv+BN fusion, dead node stripping)
     )
 
     # 2. Load ONNX model
@@ -35,7 +34,7 @@ def main():
     ret = rknn.build(
         do_quantization=True, 
         dataset=DATASET_TXT,
-        pre_compile=True                 # Pre-compiles graph layout for fast runtime initialization on board
+        pre_compile=True                     # Pre-compiles graph layout for fast runtime initialization on board
     )
     if ret != 0:
         print('Error: Build failed!')
