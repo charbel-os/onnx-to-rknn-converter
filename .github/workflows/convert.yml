@@ -22,11 +22,10 @@ jobs:
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Export YOLOv11n to ONNX
+      - name: Download & Export YOLOv11n to ONNX via CLI
         run: |
-            # Ultralytics auto-downloads 'yolov11n.pt' if it isn't present locally
-            python -c "from ultralytics import YOLO; model = YOLO('yolov11n.pt'); model.export(format='onnx', imgsz=640, simplify=True)"
-            # Ultralytics saves 'yolov11n.onnx' directly in the root directory.
+            # Ultralytics CLI automatically downloads 'yolov11n.pt' and exports it to 'yolov11n.onnx' in the root directory
+            yolo export model=yolov11n.pt format=onnx imgsz=640 simplify=True
 
       - name: Run RKNN FP16 Conversion Script
         run: python convert.py
