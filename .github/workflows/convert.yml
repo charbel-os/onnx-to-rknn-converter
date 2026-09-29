@@ -59,7 +59,7 @@ jobs:
                 imgsz=640,
                 simplify=True,
                 quantize=8,
-                data='calib.yaml',  # Pass the YAML file instead of text file
+                data='calib.yaml',
                 name='rk3588'
             )
             "
