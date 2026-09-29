@@ -25,7 +25,7 @@ jobs:
       - name: Export YOLOv11n to ONNX
         run: |
             # The Ultralytics CLI automatically downloads 'yolov11n.pt' if it's missing
-            yolo export model=yolov11n.pt format=onnx imgsz=640 simplify=True
+            yolo export model=yolo11n.pt format=onnx imgsz=640 simplify=True
 
       - name: Run RKNN FP16 Conversion Script
         run: python convert.py
