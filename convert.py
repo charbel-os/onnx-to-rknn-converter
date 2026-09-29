@@ -17,7 +17,7 @@ def main():
         quant_img_RGB2BGR=True,
         
         # High-tier accuracy settings supported by RKNN-Toolkit2 v2.3.2
-        quantized_algorithm='mmse',      # Minimizes quantization loss for better bounding box confidence
+        ##quantized_algorithm='mmse',      # Minimizes quantization loss for better bounding box confidence
         quantized_method='channel',      # Channel-wise precision distribution
         optimization_level=3             # Full graph optimization (Conv+BN fusion, dead node stripping)
     )
