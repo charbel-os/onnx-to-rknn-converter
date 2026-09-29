@@ -1,4 +1,4 @@
-name: Build FP16 YOLOv11n RKNN Model (RK3588)
+name: Build INT8 YOLOv11n RKNN Model (RK3588)
 
 on:
   push:
@@ -22,17 +22,63 @@ jobs:
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Export YOLOv11n to ONNX
+      - name: Download Sample Dataset & Generate dataset.txt
         run: |
-            # The Ultralytics CLI automatically downloads 'yolov11n.pt' if it's missing
-            yolo export model=yolo11n.pt format=onnx imgsz=640 simplify=True
+          python -c "
+          import os, glob
+          from ultralytics import YOLO
 
-      - name: Run RKNN FP16 Conversion Script
-        run: python convert.py
+          # Triggering a dummy validation or downloading a small dataset forces Ultralytics 
+          # to pull coco128 automatically. Alternatively, we can use YOLO to fetch data.
+          print('Downloading coco128 sample dataset...')
+          
+          # This loads the model and downloads coco128.yaml/images automatically
+          model = YOLO('yolo11n.pt')
+          
+          # Find the downloaded coco128 images path
+          # Ultralytics usually places datasets in a ~/.config/Ultralytics or local folder
+          # Let's write a safe fallback to find them or download them manually:
+          "
+          # Simpler method: Direct python script to create a dataset.txt from a downloaded zip or ultralytics cache
+          python -c "
+          import urllib.request, zipfile, glob, os
 
-      - name: Upload FP16 RKNN Model Artifact
+          print('Downloading COCO128 dataset for calibration...')
+          url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
+          urllib.request.urlretrieve(url, 'coco128.zip')
+
+          with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
+              zip_ref.extractall('.')
+
+          # Get all image paths from the extracted folder
+          img_paths = glob.glob('coco128/images/train2017/*.jpg')
+          
+          # Write paths to dataset.txt (using up to 100 images for calibration)
+          with open('dataset.txt', 'w') as f:
+              for path in img_paths[:100]:
+                  f.write(os.path.abspath(path) + '\n')
+          
+          print(f'Successfully generated dataset.txt with {min(100, len(img_paths))} calibration images.')
+          "
+
+      - name: Export YOLOv11n to INT8 RKNN
+        run: |
+            python -c "
+            from ultralytics import YOLO
+            model = YOLO('yolo11n.pt')
+            model.export(
+                format='rknn',
+                imgsz=640,
+                simplify=True,
+                quantize=8,
+                data='dataset.txt',
+                name='rk3588'
+            )
+            "
+
+      - name: Upload INT8 RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov11n-rknn-fp16
-            path: yolov11n_640_fp16.rknn
+            name: yolov11n-rknn-int8
+            path: yolo11n_rknn_model/yolo11n.rknn
             if-no-files-found: error
