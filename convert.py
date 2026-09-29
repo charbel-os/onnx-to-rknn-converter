@@ -1,45 +1,40 @@
 import sys
-import os
 from rknn.api import RKNN
 
+ONNX_MODEL = 'yolo11n.onnx'
+RKNN_MODEL = 'yolov11n_640_int8.rknn'
+DATASET_TXT = 'dataset.txt'
+
 def main():
-    img_size = 640
-    onnx_path = "yolo11n.onnx"
-    rknn_output_path = f"yolov11n_{img_size}_fp16.rknn"
-
-    print(f"--> Step 1: Checking ONNX model at: {onnx_path}")
-    if not os.path.exists(onnx_path):
-        print(f"❌ ERROR: ONNX model '{onnx_path}' not found.")
-        sys.exit(1)
-
-    print("--> Step 2: Configuring NPU target & pixel normalization for RK3588 (FP16)...")
     rknn = RKNN(verbose=True)
-    
-    rknn.config(
-        target_platform="rk3588",
-        mean_values=[[0, 0, 0]],
-        std_values=[[255, 255, 255]],
-        optimization_level=3
-    )
 
-    print(f"--> Step 3: Loading ONNX model into RKNN...")
-    if rknn.load_onnx(model=onnx_path) != 0:
-        print("❌ ERROR: Failed to load ONNX model.")
-        sys.exit(1)
+    # 1. Configure pre-processing / target platform
+    print('--> Configuring model target...')
+    rknn.config(mean_values=[[0, 0, 0]], std_values=[[255, 255, 255]], target_platform='rk3588')
 
-    print("--> Step 4: Building RKNN model in FP16 precision (No Quantization/Hybrids)...")
-    ret = rknn.build(do_quantization=False)
+    # 2. Load ONNX model
+    print(f'--> Loading ONNX model: {ONNX_MODEL}')
+    ret = rknn.load_onnx(model=ONNX_MODEL)
     if ret != 0:
-        print("❌ ERROR: FP16 model build failed.")
+        print('Load ONNX failed!')
         sys.exit(1)
 
-    print(f"--> Step 5: Exporting FP16 RKNN model to {rknn_output_path}...")
-    if rknn.export_rknn(rknn_output_path) != 0:
-        print("❌ ERROR: Model export failed.")
+    # 3. Build model with INT8 Quantization Enabled
+    print('--> Building INT8 RKNN model (with calibration)...')
+    ret = rknn.build(do_quantization=True, dataset=DATASET_TXT)
+    if ret != 0:
+        print('Build failed!')
         sys.exit(1)
 
-    print(f"Success! FP16 YOLOv11n RKNN model saved as '{rknn_output_path}'.")
+    # 4. Export RKNN model
+    print(f'--> Exporting RKNN model to {RKNN_MODEL}...')
+    ret = rknn.export_rknn(RKNN_MODEL)
+    if ret != 0:
+        print('Export RKNN failed!')
+        sys.exit(1)
+    
+    print('--> INT8 Quantization and Export completed successfully!')
     rknn.release()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
