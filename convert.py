@@ -3,9 +3,9 @@ import os
 from rknn.api import RKNN
 
 def main():
-    img_size = 416
-    onnx_path = "yolov7-tiny.onnx"
-    rknn_output_path = f"yolov7-tiny_{img_size}_fp16.rknn"
+    img_size = 640
+    onnx_path = "yolov11n.onnx"
+    rknn_output_path = f"yolov11n_{img_size}_fp16.rknn"
 
     print(f"--> Step 1: Checking ONNX model at: {onnx_path}")
     if not os.path.exists(onnx_path):
@@ -38,7 +38,7 @@ def main():
         print("❌ ERROR: Model export failed.")
         sys.exit(1)
 
-    print(f"Success! FP16 YOLOv7-tiny RKNN model saved as '{rknn_output_path}'.")
+    print(f"Success! FP16 YOLOv11n RKNN model saved as '{rknn_output_path}'.")
     rknn.release()
 
 if __name__ == "__main__":
