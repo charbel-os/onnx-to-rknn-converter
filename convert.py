@@ -4,7 +4,7 @@ from rknn.api import RKNN
 
 def main():
     img_size = 640
-    onnx_path = "yolov11n.onnx"
+    onnx_path = "yolo11n.onnx"
     rknn_output_path = f"yolov11n_{img_size}_fp16.rknn"
 
     print(f"--> Step 1: Checking ONNX model at: {onnx_path}")
