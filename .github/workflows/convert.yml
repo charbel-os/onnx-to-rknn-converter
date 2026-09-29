@@ -1,4 +1,4 @@
-name: Build INT8 YOLOv8s RKNN Model (RK3588)
+name: Production Build INT8 YOLOv8s RKNN Model (RK3588)
 
 on:
   push:
@@ -30,6 +30,20 @@ jobs:
             model.export(format='onnx', imgsz=640, simplify=True)
             "
 
+      - name: Verify Calibration Dataset Exists
+        run: |
+            python -c "
+            import os
+            if not os.path.exists('dataset.txt'):
+                raise FileNotFoundError('dataset.txt not found in workspace root!')
+            if not os.path.exists('cocosubset'):
+                raise FileNotFoundError('cocosubset folder not found in workspace root!')
+            
+            with open('dataset.txt', 'r') as f:
+                lines = f.readlines()
+            print(f'Verification passed: dataset.txt contains {len(lines)} references.')
+            "
+
       - name: Run RKNN Conversion Script
         run: |
             python convert.py
@@ -40,9 +54,9 @@ jobs:
             mv yolov8s_640_int8.rknn yolov8s_rknn_model/
             ls -la yolov8s_rknn_model/
 
-      - name: Upload INT8 RKNN Model Folder Artifact
+      - name: Upload Production INT8 RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov8s-rknn-int8
+            name: yolov8s-rknn-int8-prod
             path: yolov8s_rknn_model/
             if-no-files-found: error
