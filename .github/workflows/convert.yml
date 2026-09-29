@@ -1,4 +1,4 @@
-name: Build FP16 YOLOv7-tiny RKNN Model (RK3588)
+name: Build FP16 YOLOv11n RKNN Model (RK3588)
 
 on:
   push:
@@ -12,9 +12,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Clone Official YOLOv7 Repository
-        run: git clone https://github.com/WongKinYiu/yolov7.git
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -23,14 +20,12 @@ jobs:
       - name: Install Dependencies
         run: |
             python -m pip install --upgrade pip
-            pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
-            pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" rknn-toolkit2
+            pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Download YOLOv7-tiny Weights & Export to ONNX
+      - name: Download YOLOv11n & Export to ONNX
         run: |
-            wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
-            python yolov7/export.py --weights yolov7-tiny.pt --img-size 416 416 --simplify
-            # Note: export.py saves yolov7-tiny.onnx directly in the root directory, no move required.
+            python -c "from ultralytics import YOLO; model = YOLO('yolov11n.pt'); model.export(format='onnx', imgsz=640, simplify=True)"
+            # Ultralytics saves 'yolov11n.onnx' directly in the root directory.
 
       - name: Run RKNN FP16 Conversion Script
         run: python convert.py
@@ -38,6 +33,6 @@ jobs:
       - name: Upload FP16 RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov7-tiny-rknn-fp16
-            path: yolov7-tiny_416_fp16.rknn
+            name: yolov11n-rknn-fp16
+            path: yolov11n_640_fp16.rknn
             if-no-files-found: error
