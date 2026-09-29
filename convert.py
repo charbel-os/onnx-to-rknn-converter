@@ -1,8 +1,8 @@
 import sys
 from rknn.api import RKNN
 
-ONNX_MODEL = 'yolo11n.onnx'
-RKNN_MODEL = 'yolov11n_640_int8.rknn'
+ONNX_MODEL = 'yolov8s.onnx'
+RKNN_MODEL = 'yolov8s_640_int8.rknn'
 DATASET_TXT = 'dataset.txt'
 
 def main():
@@ -10,7 +10,11 @@ def main():
 
     # 1. Configure pre-processing / target platform
     print('--> Configuring model target...')
-    rknn.config(mean_values=[[0, 0, 0]], std_values=[[255, 255, 255]], target_platform='rk3588')
+    rknn.config(
+        mean_values=[[0, 0, 0]], 
+        std_values=[[255, 255, 255]], 
+        target_platform='rk3588'
+    )
 
     # 2. Load ONNX model
     print(f'--> Loading ONNX model: {ONNX_MODEL}')
