@@ -22,26 +22,10 @@ jobs:
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Download Sample Dataset & Generate dataset.txt
+      - name: Download Sample Dataset & Create YAML Config
         run: |
           python -c "
-          import os, glob
-          from ultralytics import YOLO
-
-          # Triggering a dummy validation or downloading a small dataset forces Ultralytics 
-          # to pull coco128 automatically. Alternatively, we can use YOLO to fetch data.
-          print('Downloading coco128 sample dataset...')
-          
-          # This loads the model and downloads coco128.yaml/images automatically
-          model = YOLO('yolo11n.pt')
-          
-          # Find the downloaded coco128 images path
-          # Ultralytics usually places datasets in a ~/.config/Ultralytics or local folder
-          # Let's write a safe fallback to find them or download them manually:
-          "
-          # Simpler method: Direct python script to create a dataset.txt from a downloaded zip or ultralytics cache
-          python -c "
-          import urllib.request, zipfile, glob, os
+          import urllib.request, zipfile, os
 
           print('Downloading COCO128 dataset for calibration...')
           url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
@@ -50,15 +34,19 @@ jobs:
           with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
               zip_ref.extractall('.')
 
-          # Get all image paths from the extracted folder
-          img_paths = glob.glob('coco128/images/train2017/*.jpg')
+          # Create a standard YOLO dataset YAML required by Ultralytics exporter
+          yaml_content = '''
+          path: coco128
+          train: images/train2017
+          val: images/train2017
+          names:
+            0: person
+          '''
           
-          # Write paths to dataset.txt (using up to 100 images for calibration)
-          with open('dataset.txt', 'w') as f:
-              for path in img_paths[:100]:
-                  f.write(os.path.abspath(path) + '\n')
-          
-          print(f'Successfully generated dataset.txt with {min(100, len(img_paths))} calibration images.')
+          with open('calib.yaml', 'w') as f:
+              f.write(yaml_content)
+              
+          print('Successfully created calib.yaml configuration file.')
           "
 
       - name: Export YOLOv11n to INT8 RKNN
@@ -71,7 +59,7 @@ jobs:
                 imgsz=640,
                 simplify=True,
                 quantize=8,
-                data='dataset.txt',
+                data='calib.yaml',  # Pass the YAML file instead of text file
                 name='rk3588'
             )
             "
