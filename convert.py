@@ -33,8 +33,7 @@ def main():
     print(f'--> Building INT8 RKNN model using calibration dataset: {DATASET_TXT}...')
     ret = rknn.build(
         do_quantization=True, 
-        dataset=DATASET_TXT,
-        pre_compile=True                     # Pre-compiles graph layout for fast runtime initialization on board
+        dataset=DATASET_TXT                # Pre-compiles graph layout for fast runtime initialization on board
     )
     if ret != 0:
         print('Error: Build failed!')
