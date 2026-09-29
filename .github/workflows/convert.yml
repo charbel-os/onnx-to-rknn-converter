@@ -1,4 +1,4 @@
-name: Build INT8 YOLOv11n RKNN Model (RK3588)
+name: Build INT8 YOLOv8s RKNN Model (RK3588)
 
 on:
   push:
@@ -22,54 +22,32 @@ jobs:
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Download Sample Dataset & Create YAML Config
-        run: |
-          python -c "
-          import urllib.request, zipfile, os
-
-          print('Downloading COCO128 dataset for calibration...')
-          url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
-          urllib.request.urlretrieve(url, 'coco128.zip')
-
-          with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
-              zip_ref.extractall('.')
-
-          yaml_content = '''
-          path: coco128
-          train: images/train2017
-          val: images/train2017
-          names:
-            0: person
-          '''
-          
-          with open('calib.yaml', 'w') as f:
-              f.write(yaml_content)
-              
-          print('Successfully created calib.yaml configuration file.')
-          "
-
-      - name: Export YOLOv11n to INT8 RKNN
+      - name: Export YOLOv8s to INT8 RKNN
         run: |
             python -c "
             from ultralytics import YOLO
-            model = YOLO('yolo11n.pt')
+            
+            # Load YOLOv8s model
+            model = YOLO('yolov8s.pt')
+            
+            # Export to INT8 RKNN format using the repository's dataset configuration
             model.export(
                 format='rknn',
                 imgsz=640,
                 simplify=True,
                 quantize=8,
-                data='calib.yaml',
+                data='dataset.txt',
                 name='rk3588'
             )
             "
 
       - name: Inspect Export Directory (Debug)
         run: |
-            ls -la yolo11n_rknn_model/
+            ls -la yolov8s_rknn_model/
 
       - name: Upload INT8 RKNN Model Folder Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov11n-rknn-int8
-            path: yolo11n_rknn_model/
+            name: yolov8s-rknn-int8
+            path: yolov8s_rknn_model/
             if-no-files-found: error
