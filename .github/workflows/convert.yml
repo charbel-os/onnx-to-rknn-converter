@@ -134,5 +134,16 @@ jobs:
             if-no-files-found: error
                 data='calib.yaml',
                 name='rk3588'
-            
+            )
+            "
 
+      - name: Inspect Export Directory (Debug)
+        run: |
+            ls -la yolo11n_rknn_model/
+
+      - name: Upload INT8 RKNN Model Folder Artifact
+        uses: actions/upload-artifact@v4
+        with:
+            name: yolov8n-rknn-int8
+            path: yolo8n_rknn_model/
+            if-no-files-found: error
