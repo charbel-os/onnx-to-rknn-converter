@@ -50,14 +50,19 @@ jobs:
 
       - name: Export YOLOv8n to INT8 RKNN
         run: |
-            python -c "
-            from ultralytics import YOLO
-            model = YOLO('yolo8n.pt')
-            model.export(
-                format='rknn',
-                imgsz=640,
-                simplify=True,
-                quantize=8,name: Build INT8 YOLOv11n RKNN Model (RK3588)
+          python -c "
+          from ultralytics import YOLO
+          model = YOLO('yolov8n.pt')
+          model.export(
+              format='rknn',
+              imgsz=640,
+              simplify=True,
+              quantize=8,
+              data='calib.yaml',
+              name='rk3588'
+          )
+          "
+
       - name: Inspect Export Directory (Debug)
         run: |
             ls -la yolo8n_rknn_model/
@@ -68,6 +73,3 @@ jobs:
             name: yolov8n-rknn-int8
             path: yolo8n_rknn_model/
             if-no-files-found: error
-                data='calib.yaml',
-                name='rk3588'
-            )
