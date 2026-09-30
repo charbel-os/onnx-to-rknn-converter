@@ -1,4 +1,4 @@
-name: Production Build INT8 YOLOv8s RKNN Model (RK3588)
+name: Build INT8 YOLOv8n RKNN Model (RK3588)
 
 on:
   push:
@@ -22,62 +22,117 @@ jobs:
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Export YOLOv8s to ONNX
+      - name: Download Sample Dataset & Create YAML Config
+        run: |
+          python -c "
+          import urllib.request, zipfile, os
+
+          print('Downloading COCO128 dataset for calibration...')
+          url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
+          urllib.request.urlretrieve(url, 'coco128.zip')
+
+          with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
+              zip_ref.extractall('.')
+
+          yaml_content = '''
+          path: coco128
+          train: images/train2017
+          val: images/train2017
+          names:
+            0: person
+          '''
+
+          with open('calib.yaml', 'w') as f:
+              f.write(yaml_content)
+
+          print('Successfully created calib.yaml configuration file.')
+          "
+
+      - name: Export YOLOv8n to INT8 RKNN
         run: |
             python -c "
             from ultralytics import YOLO
-            model = YOLO('yolov8s.pt')
-            model.export(format='onnx', imgsz=640, simplify=True)
-            "
+            model = YOLO('yolo11n.pt')
+            model.export(
+                format='rknn',
+                imgsz=640,
+                simplify=True,
+                quantize=8,name: Build INT8 YOLOv11n RKNN Model (RK3588)
 
-      - name: Verify Calibration Dataset Structure
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-rknn:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+            python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+            python -m pip install --upgrade pip
+            pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
+
+      - name: Download Sample Dataset & Create YAML Config
+        run: |
+          python -c "
+          import urllib.request, zipfile, os
+
+          print('Downloading COCO128 dataset for calibration...')
+          url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
+          urllib.request.urlretrieve(url, 'coco128.zip')
+
+          with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
+              zip_ref.extractall('.')
+
+          yaml_content = '''
+          path: coco128
+          train: images/train2017
+          val: images/train2017
+          names:
+            0: person
+          '''
+
+          with open('calib.yaml', 'w') as f:
+              f.write(yaml_content)
+
+          print('Successfully created calib.yaml configuration file.')
+          "
+
+      - name: Export YOLOv11n to INT8 RKNN
         run: |
             python -c "
-            import os
-            if not os.path.exists('dataset.txt'):
-                raise FileNotFoundError('dataset.txt not found in workspace root!')
-            if not os.path.exists('cocosubset'):
-                raise FileNotFoundError('cocosubset folder not found in workspace root!')
-            
-            with open('dataset.txt', 'r') as f:
-                lines = f.readlines()
-            print(f'Structure check passed: dataset.txt contains {len(lines)} references.')
+            from ultralytics import YOLO
+            model = YOLO('yolo8n.pt')
+            model.export(
+                format='rknn',
+                imgsz=640,
+                simplify=True,
+                quantize=8,
+                data='calib.yaml',
+                name='rk3588'
+            )
             "
 
-      - name: Verify Calibration Images Integrity (OpenCV Check)
+      - name: Inspect Export Directory (Debug)
         run: |
-            python -c "
-            import cv2
-            import os
+            ls -la yolo8n_rknn_model/
 
-            with open('dataset.txt', 'r') as f:
-                lines = [line.strip() for line in f if line.strip()]
-
-            print(f'Validating integrity of {len(lines)} calibration images...')
-            for idx, img_path in enumerate(lines):
-                if not os.path.exists(img_path):
-                    raise FileNotFoundError(f'Calibration image not found on disk: {img_path}')
-                
-                img = cv2.imread(img_path)
-                if img is None:
-                    raise ValueError(f'Failed to decode image at index {idx}: {img_path}. File may be corrupted.')
-
-            print('All calibration images successfully verified and loaded via OpenCV!')
-            "
-
-      - name: Run RKNN Conversion Script
-        run: |
-            python convert.py
-
-      - name: Organize Output Directory
-        run: |
-            mkdir -p yolov8s_rknn_model
-            mv yolov8s_640_int8.rknn yolov8s_rknn_model/
-            ls -la yolov8s_rknn_model/
-
-      - name: Upload Production INT8 RKNN Model Artifact
+      - name: Upload INT8 RKNN Model Folder Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov8s-rknn-int8-prod
-            path: yolov8s_rknn_model/
+            name: yolov8n-rknn-int8
+            path: yolo8n_rknn_model/
             if-no-files-found: error
+                data='calib.yaml',
+                name='rk3588'
+            )
+ 
