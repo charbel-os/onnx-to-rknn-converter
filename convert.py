@@ -6,17 +6,33 @@ from rknn.api import RKNN
 ONNX_MODEL = 'yolov8n-seg.onnx'
 RKNN_MODEL = 'yolov8n_seg_640_int8.rknn'
 DATASET_TXT = 'dataset.txt'
+CONFIG_CFG = 'quantization.cfg'
 
 def generate_dataset_txt():
     """Generates the dataset.txt file listing image paths for RKNN INT8 calibration."""
     print('--> Generating dataset.txt for INT8 calibration...')
-    image_dir = 'coco128/images/train2017'
+    possible_dirs = [
+        'coco128/images/train2017',
+        'coco128/images',
+        'datasets/coco128/images/train2017'
+    ]
     
-    if not os.path.exists(image_dir):
-        print(f"Error: Calibration image directory '{image_dir}' not found!")
+    image_dir = None
+    for d in possible_dirs:
+        if os.path.exists(d):
+            image_dir = d
+            break
+            
+    if not image_dir:
+        print(f"Error: Calibration image directory not found in expected paths: {possible_dirs}")
         sys.exit(1)
         
-    images = [os.path.join(image_dir, img) for img in os.listdir(image_dir) if img.endswith(('.jpg', '.jpeg', '.png'))][:100]
+    print(f"--> Using image directory: {image_dir}")
+    images = [os.path.join(image_dir, img) for img in os.listdir(image_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png'))][:100]
+    
+    if not images:
+        print(f"Error: No images found in {image_dir}!")
+        sys.exit(1)
     
     with open(DATASET_TXT, 'w') as f:
         for img_path in images:
@@ -28,29 +44,33 @@ def main():
     print('--> Exporting YOLOv8n-seg PyTorch model to ONNX...')
     model = YOLO('yolov8n-seg.pt')
     model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)
-
+    
     if not os.path.exists(ONNX_MODEL):
-        # Fallback renaming if ultralytics names it slightly differently
-        if os.path.exists('yolov8n-seg.onnx'):
-            pass
-        else:
-            print("Error: ONNX export failed to generate 'yolov8n-seg.onnx'.")
-            sys.exit(1)
+        print("Error: ONNX export failed to generate 'yolov8n-seg.onnx'.")
+        sys.exit(1)
 
-    # Step B: Generate the dataset text file needed for RKNN INT8 calibration
+    # Step B: Generate calibration dataset text file
     generate_dataset_txt()
 
     # Step C: Initialize RKNN API
     rknn = RKNN(verbose=True)
 
-    # 1. Configure pre-processing / target platform
-    print('--> Configuring model target for RK3588...')
-    rknn.config(
-        mean_values=[[0, 0, 0]], 
-        std_values=[[255, 255, 255]], 
-        target_platform='rk3588',
-        quantized_algorithm='kl_divergence'
-    )
+    # 1. Configure pre-processing, target platform, and hybrid quantization config
+    print('--> Configuring model target for RK3588 with hybrid quantization...')
+    config_kwargs = {
+        'mean_values': [[0, 0, 0]], 
+        'std_values': [[255, 255, 255]], 
+        'target_platform': 'rk3588',
+        'quantized_algorithm': 'kl_divergence',
+        'optimization_level': 3
+    }
+    
+    # Attach hybrid config file if present
+    if os.path.exists(CONFIG_CFG):
+        print(f'--> Applying hybrid quantization config from {CONFIG_CFG}')
+        config_kwargs['quantization_config_file'] = CONFIG_CFG
+
+    rknn.config(**config_kwargs)
 
     # 2. Load ONNX model
     print(f'--> Loading ONNX model into RKNN: {ONNX_MODEL}')
