@@ -6,10 +6,9 @@ from rknn.api import RKNN
 ONNX_MODEL = 'yolov8n-seg.onnx'
 RKNN_MODEL = 'yolov8n_seg_640_int8.rknn'
 DATASET_TXT = 'dataset.txt'
-CONFIG_CFG = 'quantization.cfg'
 
 def generate_dataset_txt():
-    """Generates the dataset.txt file listing image paths for RKNN INT8 calibration."""
+    """Generates the dataset.txt file listing image paths for RKNN INT8 calibration (200 images)."""
     print('--> Generating dataset.txt for INT8 calibration...')
     possible_dirs = [
         'coco128/images/train2017',
@@ -28,7 +27,8 @@ def generate_dataset_txt():
         sys.exit(1)
         
     print(f"--> Using image directory: {image_dir}")
-    images = [os.path.join(image_dir, img) for img in os.listdir(image_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png'))][:100]
+    # Increased calibration images limit to 200
+    images = [os.path.join(image_dir, img) for img in os.listdir(image_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png'))][:200]
     
     if not images:
         print(f"Error: No images found in {image_dir}!")
@@ -49,27 +49,21 @@ def main():
         print("Error: ONNX export failed to generate 'yolov8n-seg.onnx'.")
         sys.exit(1)
 
-    # Step B: Generate calibration dataset text file
+    # Step B: Generate calibration dataset text file (200 images)
     generate_dataset_txt()
 
     # Step C: Initialize RKNN API
     rknn = RKNN(verbose=True)
 
-    # 1. Configure pre-processing, target platform, and hybrid quantization config
-    print('--> Configuring model target for RK3588 with hybrid quantization...')
+    # 1. Configure pre-processing and target platform for full INT8 quantization
+    print('--> Configuring model target for RK3588 (Full INT8)...')
     config_kwargs = {
         'mean_values': [[0, 0, 0]], 
         'std_values': [[255, 255, 255]], 
         'target_platform': 'rk3588',
         'quantized_algorithm': 'kl_divergence',
-        'optimization_level': 3,
-        'quantized_hybrid_level': 1
+        'optimization_level': 3
     }
-    
-    # Attach hybrid config file if present
-    if os.path.exists(CONFIG_CFG):
-        print(f'--> Applying hybrid quantization config from {CONFIG_CFG}')
-        config_kwargs['quantization_config_file'] = CONFIG_CFG
 
     rknn.config(**config_kwargs)
 
@@ -80,8 +74,8 @@ def main():
         print('Load ONNX failed!')
         sys.exit(1)
 
-    # 3. Build model with INT8 Quantization Enabled
-    print('--> Building INT8 RKNN segmentation model (with calibration)...')
+    # 3. Build model with full INT8 Quantization Enabled
+    print('--> Building Full INT8 RKNN segmentation model (with calibration)...')
     ret = rknn.build(do_quantization=True, dataset=DATASET_TXT)
     if ret != 0:
         print('Build failed!')
@@ -94,7 +88,7 @@ def main():
         print('Export RKNN failed!')
         sys.exit(1)
 
-    print('--> INT8 Segmentation Quantization and Export completed successfully!')
+    print('--> Full INT8 Segmentation Quantization and Export completed successfully!')
     rknn.release()
 
 if __name__ == '__main__':
