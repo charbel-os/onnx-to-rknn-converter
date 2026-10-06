@@ -1,4 +1,4 @@
-name: Build INT8 YOLOv8n-seg RKNN Model (RK3588)
+name: Build INT8 YOLOv8n-seg RKNN Model (RK3588 Manual)
 
 on:
   push:
@@ -22,10 +22,10 @@ jobs:
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
 
-      - name: Download Sample Dataset & Create YAML Config
+      - name: Download Sample Dataset
         run: |
           python -c "
-          import urllib.request, zipfile, os
+          import urllib.request, zipfile
 
           print('Downloading COCO128 dataset for calibration...')
           url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
@@ -34,46 +34,19 @@ jobs:
           with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
               zip_ref.extractall('.')
 
-          yaml_content = '''
-          path: coco128
-          train: images/train2017
-          val: images/train2017
-          names:
-            0: person
-          '''
-
-          with open('calib.yaml', 'w') as f:
-              f.write(yaml_content)
-
-          print('Successfully created calib.yaml configuration file.')
+          print('Successfully extracted COCO128 dataset.')
           "
 
-      - name: Export YOLOv8n-seg to INT8 RKNN via Ultralytics
-        run: |
-          python -c "
-          from ultralytics import YOLO
-          
-          # Load official YOLOv8n Instance Segmentation PyTorch model
-          model = YOLO('yolov8n-seg.pt')
-          
-          # Export directly to RKNN INT8 format targeting RK3588
-          model.export(
-              format='rknn',
-              imgsz=640,
-              simplify=True,
-              quantize=8,
-              data='calib.yaml',
-              name='rk3588'
-          )
-          "
+      - name: Run Manual YOLOv8n-seg INT8 RKNN Conversion Script
+        run: python export_seg_manual.py
 
-      - name: Inspect Export Directory (Debug)
+      - name: Inspect Output File (Debug)
         run: |
-          ls -la yolov8n-seg_rknn_model/
+          ls -la yolov8n_seg_640_int8.rknn
 
-      - name: Upload INT8 RKNN Model Folder Artifact
+      - name: Upload INT8 RKNN Model Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov8n-seg-rknn-int8
-            path: yolov8n-seg_rknn_model/
+            name: yolov8n-seg-int8-rknn
+            path: yolov8n_seg_640_int8.rknn
             if-no-files-found: error
