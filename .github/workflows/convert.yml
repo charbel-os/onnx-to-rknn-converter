@@ -38,7 +38,7 @@ jobs:
           "
 
       - name: Run Manual YOLOv8n-seg INT8 RKNN Conversion Script
-        run: python export_seg_manual.py
+        run: python convert.py
 
       - name: Inspect Output File (Debug)
         run: |
