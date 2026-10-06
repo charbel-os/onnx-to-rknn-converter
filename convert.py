@@ -62,7 +62,8 @@ def main():
         'std_values': [[255, 255, 255]], 
         'target_platform': 'rk3588',
         'quantized_algorithm': 'kl_divergence',
-        'optimization_level': 3
+        'optimization_level': 3,
+        'quantized_hybrid_level': 1
     }
     
     # Attach hybrid config file if present
