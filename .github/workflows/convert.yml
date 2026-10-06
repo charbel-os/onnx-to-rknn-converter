@@ -1,4 +1,4 @@
-name: Build INT8 YOLOv8n-seg RKNN Model (RK3588 Manual)
+name: Build INT8 YOLOv8n-seg RKNN Model (RK3588 Hybrid)
 
 on:
   push:
@@ -17,30 +17,41 @@ jobs:
         with:
             python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
+
+      - name: Install Python Dependencies
         run: |
             python -m pip install --upgrade pip
             pip install opencv-python pandas requests pyyaml scipy tqdm matplotlib seaborn onnx-simplifier "onnx<1.19" ultralytics rknn-toolkit2
+
+      - name: Create Hybrid Quantization Config File
+        run: |
+          cat << 'EOF' > quantization.cfg
+          [layer_lower_precision]
+          /model.22/cv2/cv2.2/Conv = fp16
+          /model.22/cv3/cv3.2/Conv = fp16
+          /model.22/Sigmoid = fp16
+          EOF
 
       - name: Download Sample Dataset
         run: |
           python -c "
           import urllib.request, zipfile
-
           print('Downloading COCO128 dataset for calibration...')
           url = 'https://github.com/ultralytics/assets/releases/download/v0.0.0/coco128.zip'
           urllib.request.urlretrieve(url, 'coco128.zip')
-
           with zipfile.ZipFile('coco128.zip', 'r') as zip_ref:
               zip_ref.extractall('.')
-
           print('Successfully extracted COCO128 dataset.')
           "
 
-      - name: Run Manual YOLOv8n-seg INT8 RKNN Conversion Script
+      - name: Run Hybrid YOLOv8n-seg RKNN Conversion Script
         run: python convert.py
 
-      - name: Inspect Output File (Debug)
+      - name: Verify Output File Exists
         run: |
           ls -la yolov8n_seg_640_int8.rknn
 
