@@ -1,4 +1,4 @@
-name: Build INT8 YOLOv8n RKNN Model (RK3588)
+name: Build INT8 YOLOv8n-seg RKNN Model (RK3588)
 
 on:
   push:
@@ -48,11 +48,15 @@ jobs:
           print('Successfully created calib.yaml configuration file.')
           "
 
-      - name: Export YOLOv8n to INT8 RKNN
+      - name: Export YOLOv8n-seg to INT8 RKNN via Ultralytics
         run: |
           python -c "
           from ultralytics import YOLO
-          model = YOLO('yolov8n.pt')
+          
+          # Load official YOLOv8n Instance Segmentation PyTorch model
+          model = YOLO('yolov8n-seg.pt')
+          
+          # Export directly to RKNN INT8 format targeting RK3588
           model.export(
               format='rknn',
               imgsz=640,
@@ -65,11 +69,11 @@ jobs:
 
       - name: Inspect Export Directory (Debug)
         run: |
-            ls -la yolov8n_rknn_model/
+          ls -la yolov8n-seg_rknn_model/
 
       - name: Upload INT8 RKNN Model Folder Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: yolov8n-rknn-int8
-            path: yolov8n_rknn_model/
+            name: yolov8n-seg-rknn-int8
+            path: yolov8n-seg_rknn_model/
             if-no-files-found: error
