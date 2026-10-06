@@ -49,8 +49,7 @@ def main():
         mean_values=[[0, 0, 0]], 
         std_values=[[255, 255, 255]], 
         target_platform='rk3588',
-        quantized_algorithm='kl_divergence', 
-        split_nd_mode=False
+        quantized_algorithm='kl_divergence'
     )
 
     # 2. Load ONNX model
