@@ -62,7 +62,7 @@ def main():
         'std_values': [[255, 255, 255]], 
         'target_platform': 'rk3588',
         'quantized_algorithm': 'kl_divergence',
-        'quantized_dtype': 'w8a16',
+        'quantized_dtype': 'w8a8',
         'optimization_level': 3
     }
 
