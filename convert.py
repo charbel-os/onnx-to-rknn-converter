@@ -43,7 +43,7 @@ def main():
     # Step A: Export YOLOv8n-seg PyTorch to ONNX first
     print('--> Exporting YOLOv8n-seg PyTorch model to ONNX...')
     model = YOLO('yolov8n-seg.pt')
-    model.export(format='onnx', imgsz=640, simplify=True, dynamic=False)
+    model.export(format='onnx', imgsz=640, simplify=True, dynamic=False, opset=12)
     
     if not os.path.exists(ONNX_MODEL):
         print("Error: ONNX export failed to generate 'yolov8n-seg.onnx'.")
@@ -62,6 +62,7 @@ def main():
         'std_values': [[255, 255, 255]], 
         'target_platform': 'rk3588',
         'quantized_algorithm': 'kl_divergence',
+        'quantized_dtype': 'asymmetric_quantized-u8',
         'optimization_level': 3
     }
 
