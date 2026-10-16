@@ -8,24 +8,27 @@ class ImageRestorer150to640(nn.Module):
     """ Lightweight CNN Restorer + Upscaler (150x150 -> 640x640) """
     def __init__(self):
         super(ImageRestorer150to640, self).__init__()
-        # Feature extraction on 150x150
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
         self.relu = nn.ReLU()
         self.conv2 = nn.Conv2d(32, 32, kernel_size=3, padding=1)
         
-        # Hardware resize to target 640x640
         self.upsample = nn.Upsample(size=(640, 640), mode='bilinear', align_corners=False)
         
-        # Post-upscale refinement on 640x640
         self.conv3 = nn.Conv2d(32, 16, kernel_size=3, padding=1)
         self.conv4 = nn.Conv2d(16, 3, kernel_size=3, padding=1)
+        self.sigmoid = nn.Sigmoid() # Keeps output strictly bounded between 0.0 and 1.0
 
     def forward(self, x):
+        # 1. Normalize input from [0, 255] to [0.0, 1.0]
+        x = x / 255.0
+        
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
         x = self.upsample(x)
         x = self.relu(self.conv3(x))
-        x = torch.clamp(self.conv4(x), 0.0, 255.0)
+        
+        # 2. Output clean normalized range [0.0, 1.0] using Sigmoid
+        x = self.sigmoid(self.conv4(x))
         return x
 
 def main():
