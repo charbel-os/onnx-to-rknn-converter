@@ -1,0 +1,38 @@
+name: Build RKNN Image Restorer (150x150 to 640x640)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:  # Allows manual triggering from GitHub web UI
+
+jobs:
+  build-rknn:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+
+      - name: Install Dependencies & RKNN-Toolkit2
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install onnx numpy
+          
+          # Install RKNN-Toolkit2 wheel directly from official Rockchip GitHub repository
+          pip install https://github.com/airockchip/rknn-toolkit2/raw/master/rknn-toolkit2/packages/rknn_toolkit2-2.0.0b0-cp38-cp38-linux_x86_64.whl
+
+      - name: Run Conversion Script
+        run: |
+          python convert_restorer.py
+
+      - name: Upload RKNN Model Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image_restorer_150to640_rknn
+          path: image_restorer_150to640.rknn
