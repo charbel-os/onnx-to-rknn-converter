@@ -18,14 +18,21 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Clone RKNN-Toolkit2 Repository
+        uses: actions/checkout@v4
+        with:
+          repository: airockchip/rknn-toolkit2
+          ref: v2.3.2  # Stable release tag supporting Python 3.8
+          path: rknn-toolkit2
+
       - name: Install Dependencies & RKNN-Toolkit2
         run: |
           python -m pip install --upgrade pip
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install onnx numpy
           
-          # Install RKNN-Toolkit2 wheel directly from official Rockchip GitHub repository
-          pip install https://github.com/airockchip/rknn-toolkit2/raw/master/rknn-toolkit2/packages/rknn_toolkit2-2.0.0b0-cp38-cp38-linux_x86_64.whl
+          # Install RKNN-Toolkit2 from the local cloned wheel directory
+          pip install rknn-toolkit2/rknn-toolkit2/packages/x86_64/rknn_toolkit2-2.3.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
       - name: Run Conversion Script
         run: |
